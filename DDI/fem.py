@@ -9,6 +9,9 @@ import numpy as np
 import scipy
 import scipy.io
 import scipy.sparse.linalg as splinalg
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from matplotlib.ticker import FormatStrFormatter
 
 def readDICmesh(inp):
     data = scipy.io.loadmat(inp, appendmat=False)
@@ -41,8 +44,6 @@ class FEModel:
         self.B+=scipy.sparse.csr_matrix((-N[:,0]/np.power(l,2),(np.arange(Nelems),np.squeeze(self.conn[:,0]))),shape=(Nelems,2*Nnodes))
         self.B+=scipy.sparse.csr_matrix((N[:,1]/np.power(l,2),(np.arange(Nelems),Nnodes+np.squeeze(self.conn[:,1]))),shape=(Nelems,2*Nnodes))
         self.B+=scipy.sparse.csr_matrix((-N[:,1]/np.power(l,2),(np.arange(Nelems),Nnodes+np.squeeze(self.conn[:,0]))),shape=(Nelems,2*Nnodes))
-
-        
 
     def Solve(self,Ns,const_ddls,Uimp,Fext,U,verbosity = False):
         if verbosity: print('\nSolving...')
@@ -77,8 +78,53 @@ class FEModel:
                 #print(nres)
             if verbosity: print('For load factor %5.3f after %d iterations R/Fext = %8.3e dU/U=%8.3e'% (lf,iter,nres,ndU))
         return Fint
+    def show_field(self,fig, axsi,  
+            A, name = ""):
+            segments = []
+            if len(A)==self.X.shape[0]:
+                values = []
+            else:
+                values=A
+            mini_ = np.mean(A)-2*np.std(A)
+            maxi_ = np.mean(A)+2*np.std(A)
+            for e in self.conn:
+                n1, n2 = e
+                p1, p2 = self.X[n1], self.X[n2]
+                segments.append([p1, p2])
+                # couleur moyenne des extrémités (champ élémentaire)
+                if len(A)==self.X.shape[0]:
+                    values.append((A[n1] + A[n2]) / 2)
 
 
+            segments = np.array(segments)
+            values = np.array(values)
+
+            # Création de la plasma
+            lc = LineCollection(segments, array=values, cmap='plasma', linewidths=2)
+
+            # Tracé
+            h = axsi.add_collection(lc)
+            axsi.set_title(name)
+            axsi.set_xlabel('X')
+            axsi.set_ylabel('Y')
+            axsi.axis('equal')
+            axsi.set_xlim(( np.min(self.X[:,0]),np.max(self.X[:,0]) ))
+            axsi.set_ylim(( np.min(self.X[:,1]),np.max(self.X[:,1])*1.2 ))
+            h.set_clim(vmin=mini_,vmax=maxi_)
+            cbar = fig.colorbar(h, ax=axsi)
+            h.set_clim(np.quantile(A,0.05), np.quantile(A,0.95))
+            #cbar.set_ticks([np.quantile(A,0.05),np.quantile(A,0.95)])
+            cbar.ax.xaxis.set_major_formatter(FormatStrFormatter("%.0e"))
+            return h,cbar
+
+    def show_mesh(self,fig, axsi):
+            h = plt.plot(self.X[self.conn,0].T,self.X[self.conn,1].T,'b-')
+            axsi.set_title('Mesh')
+            axsi.set_xlabel('X')
+            axsi.set_ylabel('Y')
+            axsi.axis('equal')
+            axsi.set_xlim(( np.min(self.X[:,0]),np.max(self.X[:,0]) ))
+            axsi.set_ylim(( np.min(self.X[:,1]),np.max(self.X[:,1])*1.2 ))
 
 
 
