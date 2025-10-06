@@ -111,7 +111,7 @@ class FEModel:
             axsi.set_xlim(( np.min(self.X[:,0]),np.max(self.X[:,0]) ))
             axsi.set_ylim(( np.min(self.X[:,1]),np.max(self.X[:,1])*1.2 ))
             h.set_clim(vmin=mini_,vmax=maxi_)
-            cbar = fig.colorbar(h, ax=axsi)
+            cbar = fig.colorbar(h, ax=axsi,orientation='horizontal')
             h.set_clim(np.quantile(A,0.05), np.quantile(A,0.95))
             #cbar.set_ticks([np.quantile(A,0.05),np.quantile(A,0.95)])
             cbar.ax.xaxis.set_major_formatter(FormatStrFormatter("%.0e"))
